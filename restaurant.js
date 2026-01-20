@@ -1,12 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
-
   const addButtons = document.querySelectorAll(".add-to-cart-btn");
-  const cartCount = document.getElementById("cartCount");
 
+  const cartCount = document.getElementById("cartCount");
   const cartItemsDiv = document.getElementById("cartItems");
   const cartFooter = document.getElementById("cartFooter");
   const cartTotal = document.getElementById("cartTotal");
 
+  // ✅ Get / Save Cart
   function getCart() {
     return JSON.parse(localStorage.getItem("cart")) || [];
   }
@@ -15,21 +15,21 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }
 
+  // ✅ Update cart count badge
   function updateCartCount() {
-    if (!cartCount) return;
     const cart = getCart();
     let total = 0;
-    cart.forEach(item => total += item.qty);
-    cartCount.textContent = total;
+    cart.forEach((item) => (total += item.qty));
+    if (cartCount) cartCount.innerText = total;
   }
 
-  // ✅ CART UI Render Function
+  // ✅ Render Cart Sidebar Items
   function renderCart() {
     const cart = getCart();
 
+    // Empty cart UI
     if (!cartItemsDiv) return;
 
-    // Empty cart
     if (cart.length === 0) {
       cartItemsDiv.innerHTML = `
         <div class="empty-cart">
@@ -42,56 +42,67 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Show items
-    let totalPrice = 0;
+    let subtotal = 0;
 
-    cartItemsDiv.innerHTML = cart.map((item, index) => {
-      totalPrice += item.price * item.qty;
+    cartItemsDiv.innerHTML = cart
+      .map((item, index) => {
+        subtotal += item.price * item.qty;
 
-      return `
-        <div class="cart-item" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <div>
-            <h4 style="margin:0;font-size:14px;">${item.name}</h4>
-            <p style="margin:4px 0;color:gray;font-size:13px;">
-              $${item.price} × ${item.qty}
-            </p>
+        return `
+          <div class="cart-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #eee;">
+            
+            <div>
+              <h4 style="margin:0; font-size:15px;">${item.name}</h4>
+              <p style="margin:5px 0; font-size:14px; color: #ff6b35;">
+                $${item.price.toFixed(2)}
+              </p>
+
+              <div style="display:flex; align-items:center; gap:10px;">
+                <button class="cart-minus" data-index="${index}" style="padding:4px 12px; border-radius:8px;">-</button>
+                <span style="font-weight:600;">${item.qty}</span>
+                <button class="cart-plus" data-index="${index}" style="padding:4px 12px; border-radius:8px;">+</button>
+
+                <span style="margin-left:15px; color:gray;">
+                  Subtotal: <b>$${(item.price * item.qty).toFixed(2)}</b>
+                </span>
+              </div>
+            </div>
+
+            <button class="cart-remove" data-index="${index}" style="border:none; background:transparent; color:red; font-size:18px;">
+              <i class="fas fa-trash"></i>
+            </button>
           </div>
+        `;
+      })
+      .join("");
 
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="qty-btn minus" data-index="${index}" style="padding:4px 10px;">-</button>
-            <span>${item.qty}</span>
-            <button class="qty-btn plus" data-index="${index}" style="padding:4px 10px;">+</button>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    if (cartTotal) cartTotal.textContent = `$${totalPrice.toFixed(2)}`;
+    if (cartTotal) cartTotal.innerText = `$${subtotal.toFixed(2)}`;
     if (cartFooter) cartFooter.style.display = "block";
 
     updateCartCount();
   }
 
+  // ✅ Add item to cart
   function addToCart(name, price) {
     let cart = getCart();
-    const existing = cart.find(i => i.name === name);
+    const existing = cart.find((item) => item.name === name);
 
     if (existing) {
       existing.qty += 1;
     } else {
       cart.push({
-        name,
+        name: name,
         price: Number(price),
-        qty: 1
+        qty: 1,
       });
     }
 
     saveCart(cart);
-    renderCart(); // ✅ update UI
+    renderCart(); // ✅ show immediately
   }
 
-  // ✅ Add button click
-  addButtons.forEach(btn => {
+  // ✅ + button click (food cards)
+  addButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const name = btn.dataset.item;
       const price = btn.dataset.price;
@@ -99,23 +110,33 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // ✅ + / - inside cart
+  // ✅ Cart Sidebar + / - / remove click
   document.addEventListener("click", (e) => {
-    const cart = getCart();
+    let cart = getCart();
 
-    if (e.target.classList.contains("plus")) {
-      const idx = Number(e.target.dataset.index);
+    // plus
+    if (e.target.closest(".cart-plus")) {
+      const idx = Number(e.target.closest(".cart-plus").dataset.index);
       cart[idx].qty += 1;
       saveCart(cart);
       renderCart();
     }
 
-    if (e.target.classList.contains("minus")) {
-      const idx = Number(e.target.dataset.index);
+    // minus
+    if (e.target.closest(".cart-minus")) {
+      const idx = Number(e.target.closest(".cart-minus").dataset.index);
       cart[idx].qty -= 1;
 
       if (cart[idx].qty <= 0) cart.splice(idx, 1);
 
+      saveCart(cart);
+      renderCart();
+    }
+
+    // remove
+    if (e.target.closest(".cart-remove")) {
+      const idx = Number(e.target.closest(".cart-remove").dataset.index);
+      cart.splice(idx, 1);
       saveCart(cart);
       renderCart();
     }
