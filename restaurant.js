@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateCartCount() {
+    if (!cartCount) return; // ✅ safety
     const cart = getCart();
     let total = 0;
     cart.forEach(item => total += item.qty);
